@@ -38,7 +38,7 @@ export const dbService = {
       const permits: Permit[] = [];
       
       querySnapshot.forEach((doc) => {
-        permits.push({ id: doc.id, ...doc.data() } as Permit);
+        permits.push(Object.assign({}, doc.data(), { id: doc.id }) as Permit);
       });
 
       // Sort by date desc (client side sorting for simplicity with basic indexes)
@@ -157,7 +157,7 @@ export const dbService = {
       const querySnapshot = await getDocs(q);
       const users: User[] = [];
       querySnapshot.forEach((doc) => {
-        users.push({ id: doc.id, ...doc.data() } as User);
+        users.push(Object.assign({}, doc.data(), { id: doc.id }) as User);
       });
       return users;
     } catch (error) {
