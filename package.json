@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "recharts": "^3.5.1",
-    "jspdf": "^3.0.4",
+    "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.2",
     "@google/genai": "^1.30.0",
     "react": "^19.2.0",
