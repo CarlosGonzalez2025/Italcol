@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
@@ -14,6 +13,18 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format, differenceInCalendarDays, parseISO, isValid } from 'date-fns';
 
+// Import UI Components
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
+import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from './ui/dialog';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from './ui/collapsible';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
+import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
+import { Label } from './ui/label';
+
 // --- UTILS ---
 const safeFormat = (date: any, fmt: string): string => {
   if (!date) return 'N/A';
@@ -27,84 +38,18 @@ const safeFormat = (date: any, fmt: string): string => {
 
 const getStatusInfo = (status: string) => {
     const statusInfo: any = {
-        borrador: { text: 'Borrador', icon: Clock, color: '#4b5563', bgColor: '#f3f4f6' }, // gray
-        pendiente_revision: { text: 'Pendiente Revisión', icon: Clock, color: '#d97706', bgColor: '#fef3c7' }, // amber
-        aprobado: { text: 'Aprobado', icon: CheckCircle, color: '#059669', bgColor: '#d1fae5' }, // emerald
-        en_ejecucion: { text: 'En Ejecución', icon: PlayCircle, color: '#2563eb', bgColor: '#dbeafe' }, // blue
-        suspendido: { text: 'Suspendido', icon: PauseCircle, color: '#ea580c', bgColor: '#ffedd5' }, // orange
-        cerrado: { text: 'Cerrado', icon: Lock, color: '#374151', bgColor: '#e5e7eb' }, // slate
-        rechazado: { text: 'Rechazado', icon: XCircle, color: '#dc2626', bgColor: '#fee2e2' }, // red
+        borrador: { text: 'Borrador', icon: Clock, color: 'text-gray-600', bgColor: 'bg-gray-100' },
+        pendiente_revision: { text: 'Pendiente Revisión', icon: Clock, color: 'text-yellow-600', bgColor: 'bg-yellow-100' },
+        aprobado: { text: 'Aprobado', icon: CheckCircle, color: 'text-green-600', bgColor: 'bg-green-100' },
+        en_ejecucion: { text: 'En Ejecución', icon: PlayCircle, color: 'text-blue-600', bgColor: 'bg-blue-100' },
+        suspendido: { text: 'Suspendido', icon: PauseCircle, color: 'text-orange-600', bgColor: 'bg-orange-100' },
+        cerrado: { text: 'Cerrado', icon: Lock, color: 'text-gray-600', bgColor: 'bg-gray-100' },
+        rechazado: { text: 'Rechazado', icon: XCircle, color: 'text-red-600', bgColor: 'bg-red-100' },
     };
     return statusInfo[status] || statusInfo.borrador;
 };
 
-// --- UI COMPONENTS ---
-const Button = ({ children, variant = 'primary', className = '', disabled, onClick, size = 'default' }: any) => {
-    const baseClass = "inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-white";
-    const variants: any = {
-        primary: "bg-blue-600 text-white hover:bg-blue-700",
-        secondary: "bg-slate-100 text-slate-900 hover:bg-slate-200",
-        outline: "border border-slate-200 hover:bg-slate-100 hover:text-slate-900",
-        ghost: "hover:bg-slate-100 hover:text-slate-900",
-        destructive: "bg-red-600 text-white hover:bg-red-700",
-    };
-    const sizes: any = {
-        default: "h-10 py-2 px-4",
-        sm: "h-9 px-3 rounded-md",
-        icon: "h-10 w-10",
-    };
-    return (
-        <button className={`${baseClass} ${variants[variant]} ${sizes[size]} ${className}`} disabled={disabled} onClick={onClick}>
-            {children}
-        </button>
-    );
-};
-
-const Badge = ({ children, variant = 'default', className = '' }: any) => {
-    const variants: any = {
-        default: "border-transparent bg-slate-900 text-slate-50 hover:bg-slate-900/80",
-        secondary: "border-transparent bg-slate-100 text-slate-900 hover:bg-slate-100/80",
-        outline: "text-slate-950 border-slate-200",
-    };
-    return <div className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${variants[variant]} ${className}`}>{children}</div>
-};
-
-const Card = ({ children, className = '' }: any) => <div className={`rounded-lg border bg-white text-slate-950 shadow-sm ${className}`}>{children}</div>;
-const CardHeader = ({ children, className = '' }: any) => <div className={`flex flex-col space-y-1.5 p-6 ${className}`}>{children}</div>;
-const CardTitle = ({ children, className = '' }: any) => <h3 className={`text-2xl font-semibold leading-none tracking-tight ${className}`}>{children}</h3>;
-const CardContent = ({ children, className = '' }: any) => <div className={`p-6 pt-0 ${className}`}>{children}</div>;
-
-const Collapsible = ({ children, defaultOpen = false }: any) => {
-    const [isOpen, setIsOpen] = useState(defaultOpen);
-    return React.Children.map(children, child => {
-        if (React.isValidElement(child)) {
-            return React.cloneElement(child, { isOpen, setIsOpen } as any);
-        }
-        return child;
-    });
-};
-const CollapsibleTrigger = ({ children, isOpen, setIsOpen, className = '' }: any) => (
-    <button onClick={() => setIsOpen(!isOpen)} className={className}>
-        {children}
-        <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-    </button>
-);
-const CollapsibleContent = ({ children, isOpen, className = '' }: any) => (
-    <div className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'} ${className}`}>
-        {children}
-    </div>
-);
-
-const Dialog = ({ open, children }: any) => {
-    if (!open) return null;
-    return (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-           <div className="bg-white rounded-lg shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-             {children}
-           </div>
-        </div>
-    );
-};
+// --- CUSTOM COMPONENTS ---
 
 const Section = ({ title, children, className = '' }: any) => (
     <div className={className}>
@@ -422,7 +367,7 @@ export const PermitDetail: React.FC<{ user: User }> = ({ user }) => {
                     <div>
                         <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                             {permit.number}
-                            <Badge className="ml-2" style={{ backgroundColor: statusStyle.bgColor, color: statusStyle.color }}>
+                            <Badge className={`ml-2 ${statusStyle.bgColor} ${statusStyle.color}`}>
                                 <statusStyle.icon size={14} className="mr-1" /> {statusStyle.text}
                             </Badge>
                         </h1>
