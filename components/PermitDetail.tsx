@@ -424,6 +424,235 @@ export const PermitDetail: React.FC<{ user: User }> = ({ user }) => {
                     </CollapsibleContent>
                 </Collapsible>
 
+                {/* Anexo Alturas */}
+                {permit.selectedWorkTypes?.alturas && permit.anexoAltura && (
+                    <Collapsible defaultOpen={false}>
+                        <CollapsibleTrigger className="flex w-full items-center justify-between bg-blue-50 p-4 rounded-lg border border-blue-200 shadow-sm font-semibold text-blue-800 hover:bg-blue-100 transition-colors">
+                            <span className="flex items-center gap-2">
+                                <AlertTriangle size={18} className="text-blue-600"/>
+                                ANEXO 1 - Trabajo en Alturas
+                            </span>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="bg-white border-x border-b border-blue-200 rounded-b-lg p-6 space-y-6">
+                            <Section title="Información General">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <Field label="Altura Aproximada" value={`${permit.anexoAltura.alturaAproximada || 'N/A'} metros`} />
+                                    <Field label="Tarea" value={permit.anexoAltura.tareaRealizar?.nombre} />
+                                    <Field label="Descripción" value={permit.anexoAltura.tareaRealizar?.descripcion} fullWidth />
+                                    <Field label="Contacto Emergencia" value={`${permit.anexoAltura.emergencia?.contacto || 'N/A'} - ${permit.anexoAltura.emergencia?.telefono || 'N/A'}`} />
+                                </div>
+                            </Section>
+
+                            {permit.anexoAltura.aspectosSeguridad && (
+                                <Section title="Aspectos de Seguridad Verificados" className="mt-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {Object.entries(permit.anexoAltura.aspectosSeguridad).map(([key, value]) => (
+                                            <RadioCheck key={key} label={key.replace(/([A-Z])/g, ' $1').toUpperCase()} value={value} />
+                                        ))}
+                                    </div>
+                                </Section>
+                            )}
+
+                            {permit.anexoAltura.tipoEstructura && (
+                                <Section title="Tipo de Estructura" className="mt-6">
+                                    <div className="flex flex-wrap gap-2">
+                                        {Object.entries(permit.anexoAltura.tipoEstructura).map(([key, value]) =>
+                                            value ? (
+                                                <span key={key}>
+                                                    <Badge className="bg-blue-100 text-blue-800">{key}</Badge>
+                                                </span>
+                                            ) : null
+                                        )}
+                                    </div>
+                                </Section>
+                            )}
+                        </CollapsibleContent>
+                    </Collapsible>
+                )}
+
+                {/* Anexo Confinado */}
+                {permit.selectedWorkTypes?.confinado && permit.anexoConfinado && (
+                    <Collapsible defaultOpen={false}>
+                        <CollapsibleTrigger className="flex w-full items-center justify-between bg-purple-50 p-4 rounded-lg border border-purple-200 shadow-sm font-semibold text-purple-800 hover:bg-purple-100 transition-colors">
+                            <span className="flex items-center gap-2">
+                                <Siren size={18} className="text-purple-600"/>
+                                ANEXO 2 - Espacios Confinados
+                            </span>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="bg-white border-x border-b border-purple-200 rounded-b-lg p-6 space-y-6">
+                            <Section title="Pruebas de Gases Iniciales">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <Field label="LEL (0%)" value={permit.anexoConfinado.resultadosPruebasGases?.lel || 'N/A'} />
+                                    <Field label="O2 (19.5-22%)" value={permit.anexoConfinado.resultadosPruebasGases?.o2 || 'N/A'} />
+                                    <Field label="H2S (0-10 PPM)" value={permit.anexoConfinado.resultadosPruebasGases?.h2s || 'N/A'} />
+                                    <Field label="CO (0-25 PPM)" value={permit.anexoConfinado.resultadosPruebasGases?.co || 'N/A'} />
+                                </div>
+                            </Section>
+
+                            {permit.anexoConfinado.identificacionPeligros && (
+                                <Section title="Identificación de Peligros" className="mt-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {Object.entries(permit.anexoConfinado.identificacionPeligros).map(([key, value]) => (
+                                            <RadioCheck key={key} label={key.replace(/([A-Z])/g, ' $1').toUpperCase()} value={value} />
+                                        ))}
+                                    </div>
+                                </Section>
+                            )}
+
+                            {permit.anexoConfinado.precauciones && (
+                                <Section title="Precauciones y Controles" className="mt-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {Object.entries(permit.anexoConfinado.precauciones).map(([key, value]) => (
+                                            <RadioCheck key={key} label={key.replace(/([A-Z])/g, ' $1').toUpperCase()} value={value} />
+                                        ))}
+                                    </div>
+                                </Section>
+                            )}
+                        </CollapsibleContent>
+                    </Collapsible>
+                )}
+
+                {/* Anexo Energías */}
+                {permit.selectedWorkTypes?.energia && permit.anexoEnergias && (
+                    <Collapsible defaultOpen={false}>
+                        <CollapsibleTrigger className="flex w-full items-center justify-between bg-yellow-50 p-4 rounded-lg border border-yellow-200 shadow-sm font-semibold text-yellow-800 hover:bg-yellow-100 transition-colors">
+                            <span className="flex items-center gap-2">
+                                <AlertTriangle size={18} className="text-yellow-600"/>
+                                ANEXO 3 - Control de Energías
+                            </span>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="bg-white border-x border-b border-yellow-200 rounded-b-lg p-6 space-y-6">
+                            {permit.anexoEnergias.energiasPeligrosas && (
+                                <Section title="Tipos de Energía Identificados">
+                                    <div className="flex flex-wrap gap-2">
+                                        {Object.entries(permit.anexoEnergias.energiasPeligrosas).map(([key, value]) =>
+                                            value ? (
+                                                <span key={key}>
+                                                    <Badge className="bg-yellow-100 text-yellow-800">{key.replace(/([A-Z])/g, ' $1').toUpperCase()}</Badge>
+                                                </span>
+                                            ) : null
+                                        )}
+                                    </div>
+                                </Section>
+                            )}
+
+                            {permit.anexoEnergias.trabajosEnCaliente && (
+                                <Section title="Trabajos en Caliente" className="mt-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {Object.entries(permit.anexoEnergias.trabajosEnCaliente).map(([key, value]) => (
+                                            <RadioCheck key={key} label={key.replace(/([A-Z])/g, ' $1').toUpperCase()} value={value} />
+                                        ))}
+                                    </div>
+                                </Section>
+                            )}
+
+                            {permit.anexoEnergias.procedimientoLOTO && (
+                                <Section title="Procedimiento LOTO" className="mt-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {Object.entries(permit.anexoEnergias.procedimientoLOTO).map(([key, value]) => (
+                                            <RadioCheck key={key} label={key.replace(/([A-Z])/g, ' $1').toUpperCase()} value={value} />
+                                        ))}
+                                    </div>
+                                </Section>
+                            )}
+
+                            {permit.anexoEnergias.sistemaElectrico && (
+                                <Section title="Sistema Eléctrico" className="mt-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <Field label="Tensión Nominal" value={permit.anexoEnergias.sistemaElectrico.tensionNominal} />
+                                        <Field label="Tensión Personal Expuesto" value={permit.anexoEnergias.sistemaElectrico.tensionPersonal} />
+                                        <Field label="Distancia de Seguridad" value={permit.anexoEnergias.sistemaElectrico.distanciaSeguridad} />
+                                    </div>
+                                </Section>
+                            )}
+                        </CollapsibleContent>
+                    </Collapsible>
+                )}
+
+                {/* Anexo Izaje */}
+                {permit.selectedWorkTypes?.izaje && permit.anexoIzaje && (
+                    <Collapsible defaultOpen={false}>
+                        <CollapsibleTrigger className="flex w-full items-center justify-between bg-green-50 p-4 rounded-lg border border-green-200 shadow-sm font-semibold text-green-800 hover:bg-green-100 transition-colors">
+                            <span className="flex items-center gap-2">
+                                <Shield size={18} className="text-green-600"/>
+                                ANEXO 4 - Izaje de Cargas
+                            </span>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="bg-white border-x border-b border-green-200 rounded-b-lg p-6 space-y-6">
+                            <Section title="Información General">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <Field label="Acción" value={Object.entries(permit.anexoIzaje.informacionGeneral.accion || {}).filter(([,v]) => v).map(([k]) => k).join(', ')} />
+                                    <Field label="Peso de Carga" value={Object.entries(permit.anexoIzaje.informacionGeneral.pesoCarga || {}).filter(([,v]) => v).map(([k]) => k).join(', ')} />
+                                    <Field label="Equipo a Utilizar" value={Object.entries(permit.anexoIzaje.informacionGeneral.equipoUtilizar || {}).filter(([,v]) => v).map(([k]) => k).join(', ')} />
+                                    <Field label="Capacidad del Equipo" value={permit.anexoIzaje.informacionGeneral.capacidadEquipo} />
+                                </div>
+                            </Section>
+
+                            {permit.anexoIzaje.aspectosRequeridos && (
+                                <Section title="Aspectos Requeridos" className="mt-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {Object.entries(permit.anexoIzaje.aspectosRequeridos).map(([key, value]) => (
+                                            <RadioCheck key={key} label={key.replace(/([A-Z])/g, ' $1').toUpperCase()} value={value} />
+                                        ))}
+                                    </div>
+                                </Section>
+                            )}
+
+                            {permit.anexoIzaje.precauciones && (
+                                <Section title="Precauciones" className="mt-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {Object.entries(permit.anexoIzaje.precauciones).map(([key, value]) => (
+                                            <RadioCheck key={key} label={key.replace(/([A-Z])/g, ' $1').toUpperCase()} value={value} />
+                                        ))}
+                                    </div>
+                                </Section>
+                            )}
+                        </CollapsibleContent>
+                    </Collapsible>
+                )}
+
+                {/* Anexo Excavaciones */}
+                {permit.selectedWorkTypes?.excavacion && permit.anexoExcavaciones && (
+                    <Collapsible defaultOpen={false}>
+                        <CollapsibleTrigger className="flex w-full items-center justify-between bg-orange-50 p-4 rounded-lg border border-orange-200 shadow-sm font-semibold text-orange-800 hover:bg-orange-100 transition-colors">
+                            <span className="flex items-center gap-2">
+                                <AlertTriangle size={18} className="text-orange-600"/>
+                                ANEXO 5 - Excavaciones
+                            </span>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="bg-white border-x border-b border-orange-200 rounded-b-lg p-6 space-y-6">
+                            <Section title="Dimensiones de la Excavación">
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <Field label="Dimensiones" value={permit.anexoExcavaciones.informacionGeneral.dimensiones} />
+                                    <Field label="Profundidad" value={permit.anexoExcavaciones.informacionGeneral.profundidad} />
+                                    <Field label="Ancho" value={permit.anexoExcavaciones.informacionGeneral.ancho} />
+                                    <Field label="Largo" value={permit.anexoExcavaciones.informacionGeneral.largo} />
+                                </div>
+                            </Section>
+
+                            {permit.anexoExcavaciones.aspectosRequeridos && (
+                                <Section title="Aspectos Requeridos" className="mt-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {Object.entries(permit.anexoExcavaciones.aspectosRequeridos).map(([key, value]) => (
+                                            <RadioCheck key={key} label={key.replace(/([A-Z])/g, ' $1').toUpperCase()} value={value} />
+                                        ))}
+                                    </div>
+                                </Section>
+                            )}
+
+                            {permit.anexoExcavaciones.precauciones && (
+                                <Section title="Precauciones" className="mt-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {Object.entries(permit.anexoExcavaciones.precauciones).map(([key, value]) => (
+                                            <RadioCheck key={key} label={key.replace(/([A-Z])/g, ' $1').toUpperCase()} value={value} />
+                                        ))}
+                                    </div>
+                                </Section>
+                            )}
+                        </CollapsibleContent>
+                    </Collapsible>
+                )}
+
                 {/* Workers Table */}
                 <Card>
                     <CardHeader><CardTitle className="flex items-center gap-2"><Users className="text-blue-500"/> Personal Autorizado</CardTitle></CardHeader>
