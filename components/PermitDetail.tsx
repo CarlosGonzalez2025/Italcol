@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
@@ -14,6 +13,18 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format, differenceInCalendarDays, parseISO, isValid } from 'date-fns';
 
+// Import UI Components
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
+import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from './ui/dialog';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from './ui/collapsible';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
+import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
+import { Label } from './ui/label';
+
 // --- UTILS ---
 const safeFormat = (date: any, fmt: string): string => {
   if (!date) return 'N/A';
@@ -27,84 +38,18 @@ const safeFormat = (date: any, fmt: string): string => {
 
 const getStatusInfo = (status: string) => {
     const statusInfo: any = {
-        borrador: { text: 'Borrador', icon: Clock, color: '#4b5563', bgColor: '#f3f4f6' }, // gray
-        pendiente_revision: { text: 'Pendiente Revisión', icon: Clock, color: '#d97706', bgColor: '#fef3c7' }, // amber
-        aprobado: { text: 'Aprobado', icon: CheckCircle, color: '#059669', bgColor: '#d1fae5' }, // emerald
-        en_ejecucion: { text: 'En Ejecución', icon: PlayCircle, color: '#2563eb', bgColor: '#dbeafe' }, // blue
-        suspendido: { text: 'Suspendido', icon: PauseCircle, color: '#ea580c', bgColor: '#ffedd5' }, // orange
-        cerrado: { text: 'Cerrado', icon: Lock, color: '#374151', bgColor: '#e5e7eb' }, // slate
-        rechazado: { text: 'Rechazado', icon: XCircle, color: '#dc2626', bgColor: '#fee2e2' }, // red
+        borrador: { text: 'Borrador', icon: Clock, color: 'text-gray-600', bgColor: 'bg-gray-100' },
+        pendiente_revision: { text: 'Pendiente Revisión', icon: Clock, color: 'text-yellow-600', bgColor: 'bg-yellow-100' },
+        aprobado: { text: 'Aprobado', icon: CheckCircle, color: 'text-green-600', bgColor: 'bg-green-100' },
+        en_ejecucion: { text: 'En Ejecución', icon: PlayCircle, color: 'text-blue-600', bgColor: 'bg-blue-100' },
+        suspendido: { text: 'Suspendido', icon: PauseCircle, color: 'text-orange-600', bgColor: 'bg-orange-100' },
+        cerrado: { text: 'Cerrado', icon: Lock, color: 'text-gray-600', bgColor: 'bg-gray-100' },
+        rechazado: { text: 'Rechazado', icon: XCircle, color: 'text-red-600', bgColor: 'bg-red-100' },
     };
     return statusInfo[status] || statusInfo.borrador;
 };
 
-// --- UI COMPONENTS ---
-const Button = ({ children, variant = 'primary', className = '', disabled, onClick, size = 'default' }: any) => {
-    const baseClass = "inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-white";
-    const variants: any = {
-        primary: "bg-blue-600 text-white hover:bg-blue-700",
-        secondary: "bg-slate-100 text-slate-900 hover:bg-slate-200",
-        outline: "border border-slate-200 hover:bg-slate-100 hover:text-slate-900",
-        ghost: "hover:bg-slate-100 hover:text-slate-900",
-        destructive: "bg-red-600 text-white hover:bg-red-700",
-    };
-    const sizes: any = {
-        default: "h-10 py-2 px-4",
-        sm: "h-9 px-3 rounded-md",
-        icon: "h-10 w-10",
-    };
-    return (
-        <button className={`${baseClass} ${variants[variant]} ${sizes[size]} ${className}`} disabled={disabled} onClick={onClick}>
-            {children}
-        </button>
-    );
-};
-
-const Badge = ({ children, variant = 'default', className = '' }: any) => {
-    const variants: any = {
-        default: "border-transparent bg-slate-900 text-slate-50 hover:bg-slate-900/80",
-        secondary: "border-transparent bg-slate-100 text-slate-900 hover:bg-slate-100/80",
-        outline: "text-slate-950 border-slate-200",
-    };
-    return <div className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${variants[variant]} ${className}`}>{children}</div>
-};
-
-const Card = ({ children, className = '' }: any) => <div className={`rounded-lg border bg-white text-slate-950 shadow-sm ${className}`}>{children}</div>;
-const CardHeader = ({ children, className = '' }: any) => <div className={`flex flex-col space-y-1.5 p-6 ${className}`}>{children}</div>;
-const CardTitle = ({ children, className = '' }: any) => <h3 className={`text-2xl font-semibold leading-none tracking-tight ${className}`}>{children}</h3>;
-const CardContent = ({ children, className = '' }: any) => <div className={`p-6 pt-0 ${className}`}>{children}</div>;
-
-const Collapsible = ({ children, defaultOpen = false }: any) => {
-    const [isOpen, setIsOpen] = useState(defaultOpen);
-    return React.Children.map(children, child => {
-        if (React.isValidElement(child)) {
-            return React.cloneElement(child, { isOpen, setIsOpen } as any);
-        }
-        return child;
-    });
-};
-const CollapsibleTrigger = ({ children, isOpen, setIsOpen, className = '' }: any) => (
-    <button onClick={() => setIsOpen(!isOpen)} className={className}>
-        {children}
-        <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-    </button>
-);
-const CollapsibleContent = ({ children, isOpen, className = '' }: any) => (
-    <div className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'} ${className}`}>
-        {children}
-    </div>
-);
-
-const Dialog = ({ open, children }: any) => {
-    if (!open) return null;
-    return (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-           <div className="bg-white rounded-lg shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-             {children}
-           </div>
-        </div>
-    );
-};
+// --- CUSTOM COMPONENTS ---
 
 const Section = ({ title, children, className = '' }: any) => (
     <div className={className}>
@@ -135,6 +80,112 @@ const RadioCheck = ({ label, value, spec }: any) => {
                 {icons[status]}
             </div>
         </div>
+    );
+};
+
+// --- DAILY VALIDATION TABLE ---
+const DailyValidationTable = ({ anexoName, validationData, permit, onSignClick }: {
+    anexoName: string;
+    validationData?: { responsable: ValidacionDiaria[]; autoridad: ValidacionDiaria[] };
+    permit: Permit;
+    onSignClick: (anexo: string, type: 'responsable' | 'autoridad', index: number) => void;
+}) => {
+    // Calculate permit duration
+    let durationInDays = 1;
+    if (permit.generalInfo?.validFrom && permit.generalInfo?.validUntil) {
+        try {
+            const startDate = parseISO(permit.generalInfo.validFrom);
+            const endDate = parseISO(permit.generalInfo.validUntil);
+            if (isValid(startDate) && isValid(endDate)) {
+                durationInDays = differenceInCalendarDays(endDate, startDate) + 1;
+            }
+        } catch (e) {
+            console.error("Error parsing dates:", e);
+        }
+    }
+
+    const renderRows = (type: 'responsable' | 'autoridad') => {
+        return Array.from({ length: durationInDays }, (_, i) => {
+            const v = validationData?.[type]?.[i];
+
+            return (
+                <tr key={`${type}-${i}`} className="border-b hover:bg-slate-50">
+                    <td className="p-3 text-center font-semibold">{i + 1}</td>
+                    <td className="p-3">{v?.nombre || 'Pendiente'}</td>
+                    <td className="p-3 text-center">
+                        {v?.firma ? (
+                            <div className="flex items-center justify-center">
+                                <img src={v.firma} alt="Firma" className="h-10 w-20 border rounded object-contain" />
+                            </div>
+                        ) : (
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => onSignClick(anexoName, type, i)}
+                                disabled={permit.status !== 'en_ejecucion' && permit.status !== 'suspendido'}
+                            >
+                                Firmar
+                            </Button>
+                        )}
+                    </td>
+                    <td className="p-3 text-xs text-slate-500">
+                        {v?.fecha ? safeFormat(v.fecha, 'dd/MM/yy HH:mm') : '-'}
+                    </td>
+                </tr>
+            );
+        });
+    };
+
+    return (
+        <Section title="Validación Diaria" className="mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Responsable Table */}
+                <div className="border rounded-lg overflow-hidden">
+                    <div className="bg-blue-50 p-3 border-b">
+                        <h4 className="font-semibold text-sm text-blue-900">Responsable del Trabajo</h4>
+                        <p className="text-xs text-blue-700">Entiendo las condiciones y responsabilidad</p>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead className="bg-slate-100">
+                                <tr>
+                                    <th className="p-3 text-left font-semibold">Día</th>
+                                    <th className="p-3 text-left font-semibold">Nombre</th>
+                                    <th className="p-3 text-center font-semibold">Firma</th>
+                                    <th className="p-3 text-left font-semibold">Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {renderRows('responsable')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Autoridad Table */}
+                <div className="border rounded-lg overflow-hidden">
+                    <div className="bg-green-50 p-3 border-b">
+                        <h4 className="font-semibold text-sm text-green-900">Autoridad del Área</h4>
+                        <p className="text-xs text-green-700">Entiendo las condiciones y responsabilidad</p>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead className="bg-slate-100">
+                                <tr>
+                                    <th className="p-3 text-left font-semibold">Día</th>
+                                    <th className="p-3 text-left font-semibold">Nombre</th>
+                                    <th className="p-3 text-center font-semibold">Firma</th>
+                                    <th className="p-3 text-left font-semibold">Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {renderRows('autoridad')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </Section>
     );
 };
 
@@ -241,6 +292,15 @@ export const PermitDetail: React.FC<{ user: User }> = ({ user }) => {
     const [signingContext, setSigningContext] = useState<any>(null); // { role, type, index? }
     const [signerName, setSignerName] = useState('');
     const [isSigning, setIsSigning] = useState(false);
+
+    // Daily Validation State
+    const [dailyValidationDialogOpen, setDailyValidationDialogOpen] = useState(false);
+    const [dailyValidationTarget, setDailyValidationTarget] = useState<{
+        anexo: string;
+        type: 'responsable' | 'autoridad';
+        index: number;
+    } | null>(null);
+    const [dailyValidationName, setDailyValidationName] = useState('');
 
     // Initial Load & Realtime Listener
     useEffect(() => {
@@ -367,6 +427,51 @@ export const PermitDetail: React.FC<{ user: User }> = ({ user }) => {
         }
     };
 
+    const handleDailyValidationSign = async (dataUrl: string) => {
+        if (!permit || !dailyValidationTarget) return;
+        const { anexo, type, index } = dailyValidationTarget;
+
+        setIsSigning(true);
+        try {
+            const permitRef = doc(db, 'permits', permit.id);
+            const validationData = {
+                nombre: dailyValidationName || user.name,
+                fecha: new Date().toISOString(),
+                firma: dataUrl
+            };
+
+            // Update the corresponding validation array
+            const fieldPath = `${anexo}.validacionesDiarias.${type}[${index}]`;
+
+            // Get current data
+            const currentAnexo = (permit as any)[anexo] || {};
+            const currentValidaciones = currentAnexo.validacionesDiarias || { responsable: [], autoridad: [] };
+
+            // Update the array
+            const updatedArray = [...(currentValidaciones[type] || [])];
+            updatedArray[index] = validationData;
+
+            await updateDoc(permitRef, {
+                [`${anexo}.validacionesDiarias.${type}`]: updatedArray
+            });
+
+            setDailyValidationDialogOpen(false);
+            setDailyValidationTarget(null);
+            setDailyValidationName('');
+        } catch (e) {
+            console.error(e);
+            alert("Error al guardar firma de validación diaria");
+        } finally {
+            setIsSigning(false);
+        }
+    };
+
+    const handleDailyValidationClick = (anexo: string, type: 'responsable' | 'autoridad', index: number) => {
+        setDailyValidationTarget({ anexo, type, index });
+        setDailyValidationName('');
+        setDailyValidationDialogOpen(true);
+    };
+
     const changeStatus = async (newStatus: PermitStatus) => {
         if (!permit) return;
         if (!confirm(`¿Cambiar estado a ${newStatus}?`)) return;
@@ -422,7 +527,7 @@ export const PermitDetail: React.FC<{ user: User }> = ({ user }) => {
                     <div>
                         <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                             {permit.number}
-                            <Badge className="ml-2" style={{ backgroundColor: statusStyle.bgColor, color: statusStyle.color }}>
+                            <Badge className={`ml-2 ${statusStyle.bgColor} ${statusStyle.color}`}>
                                 <statusStyle.icon size={14} className="mr-1" /> {statusStyle.text}
                             </Badge>
                         </h1>
@@ -478,6 +583,275 @@ export const PermitDetail: React.FC<{ user: User }> = ({ user }) => {
                         </div>
                     </CollapsibleContent>
                 </Collapsible>
+
+                {/* Anexo Alturas */}
+                {permit.selectedWorkTypes?.alturas && permit.anexoAltura && (
+                    <Collapsible defaultOpen={false}>
+                        <CollapsibleTrigger className="flex w-full items-center justify-between bg-blue-50 p-4 rounded-lg border border-blue-200 shadow-sm font-semibold text-blue-800 hover:bg-blue-100 transition-colors">
+                            <span className="flex items-center gap-2">
+                                <AlertTriangle size={18} className="text-blue-600"/>
+                                ANEXO 1 - Trabajo en Alturas
+                            </span>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="bg-white border-x border-b border-blue-200 rounded-b-lg p-6 space-y-6">
+                            <Section title="Información General">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <Field label="Altura Aproximada" value={`${permit.anexoAltura.alturaAproximada || 'N/A'} metros`} />
+                                    <Field label="Tarea" value={permit.anexoAltura.tareaRealizar?.nombre} />
+                                    <Field label="Descripción" value={permit.anexoAltura.tareaRealizar?.descripcion} fullWidth />
+                                    <Field label="Contacto Emergencia" value={`${permit.anexoAltura.emergencia?.contacto || 'N/A'} - ${permit.anexoAltura.emergencia?.telefono || 'N/A'}`} />
+                                </div>
+                            </Section>
+
+                            {permit.anexoAltura.aspectosSeguridad && (
+                                <Section title="Aspectos de Seguridad Verificados" className="mt-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {Object.entries(permit.anexoAltura.aspectosSeguridad).map(([key, value]) => (
+                                            <RadioCheck key={key} label={key.replace(/([A-Z])/g, ' $1').toUpperCase()} value={value} />
+                                        ))}
+                                    </div>
+                                </Section>
+                            )}
+
+                            {permit.anexoAltura.tipoEstructura && (
+                                <Section title="Tipo de Estructura" className="mt-6">
+                                    <div className="flex flex-wrap gap-2">
+                                        {Object.entries(permit.anexoAltura.tipoEstructura).map(([key, value]) =>
+                                            value ? (
+                                                <span key={key}>
+                                                    <Badge className="bg-blue-100 text-blue-800">{key}</Badge>
+                                                </span>
+                                            ) : null
+                                        )}
+                                    </div>
+                                </Section>
+                            )}
+
+                            {/* Daily Validations */}
+                            <div className="mt-8 border-t pt-6">
+                                <DailyValidationTable
+                                    anexoName="anexoAltura"
+                                    validationData={permit.anexoAltura.validacionesDiarias}
+                                    permit={permit}
+                                    onSignClick={handleDailyValidationClick}
+                                />
+                            </div>
+                        </CollapsibleContent>
+                    </Collapsible>
+                )}
+
+                {/* Anexo Confinado */}
+                {permit.selectedWorkTypes?.confinado && permit.anexoConfinado && (
+                    <Collapsible defaultOpen={false}>
+                        <CollapsibleTrigger className="flex w-full items-center justify-between bg-purple-50 p-4 rounded-lg border border-purple-200 shadow-sm font-semibold text-purple-800 hover:bg-purple-100 transition-colors">
+                            <span className="flex items-center gap-2">
+                                <Siren size={18} className="text-purple-600"/>
+                                ANEXO 2 - Espacios Confinados
+                            </span>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="bg-white border-x border-b border-purple-200 rounded-b-lg p-6 space-y-6">
+                            <Section title="Pruebas de Gases Iniciales">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <Field label="LEL (0%)" value={permit.anexoConfinado.resultadosPruebasGases?.lel || 'N/A'} />
+                                    <Field label="O2 (19.5-22%)" value={permit.anexoConfinado.resultadosPruebasGases?.o2 || 'N/A'} />
+                                    <Field label="H2S (0-10 PPM)" value={permit.anexoConfinado.resultadosPruebasGases?.h2s || 'N/A'} />
+                                    <Field label="CO (0-25 PPM)" value={permit.anexoConfinado.resultadosPruebasGases?.co || 'N/A'} />
+                                </div>
+                            </Section>
+
+                            {permit.anexoConfinado.identificacionPeligros && (
+                                <Section title="Identificación de Peligros" className="mt-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {Object.entries(permit.anexoConfinado.identificacionPeligros).map(([key, value]) => (
+                                            <RadioCheck key={key} label={key.replace(/([A-Z])/g, ' $1').toUpperCase()} value={value} />
+                                        ))}
+                                    </div>
+                                </Section>
+                            )}
+
+                            {permit.anexoConfinado.precauciones && (
+                                <Section title="Precauciones y Controles" className="mt-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {Object.entries(permit.anexoConfinado.precauciones).map(([key, value]) => (
+                                            <RadioCheck key={key} label={key.replace(/([A-Z])/g, ' $1').toUpperCase()} value={value} />
+                                        ))}
+                                    </div>
+                                </Section>
+                            )}
+
+                            {/* Daily Validations */}
+                            <div className="mt-8 border-t pt-6">
+                                <DailyValidationTable
+                                    anexoName="anexoConfinado"
+                                    validationData={permit.anexoConfinado.validacionesDiarias}
+                                    permit={permit}
+                                    onSignClick={handleDailyValidationClick}
+                                />
+                            </div>
+                        </CollapsibleContent>
+                    </Collapsible>
+                )}
+
+                {/* Anexo Energías */}
+                {permit.selectedWorkTypes?.energia && permit.anexoEnergias && (
+                    <Collapsible defaultOpen={false}>
+                        <CollapsibleTrigger className="flex w-full items-center justify-between bg-yellow-50 p-4 rounded-lg border border-yellow-200 shadow-sm font-semibold text-yellow-800 hover:bg-yellow-100 transition-colors">
+                            <span className="flex items-center gap-2">
+                                <AlertTriangle size={18} className="text-yellow-600"/>
+                                ANEXO 3 - Control de Energías
+                            </span>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="bg-white border-x border-b border-yellow-200 rounded-b-lg p-6 space-y-6">
+                            {permit.anexoEnergias.energiasPeligrosas && (
+                                <Section title="Tipos de Energía Identificados">
+                                    <div className="flex flex-wrap gap-2">
+                                        {Object.entries(permit.anexoEnergias.energiasPeligrosas).map(([key, value]) =>
+                                            value ? (
+                                                <span key={key}>
+                                                    <Badge className="bg-yellow-100 text-yellow-800">{key.replace(/([A-Z])/g, ' $1').toUpperCase()}</Badge>
+                                                </span>
+                                            ) : null
+                                        )}
+                                    </div>
+                                </Section>
+                            )}
+
+                            {permit.anexoEnergias.trabajosEnCaliente && (
+                                <Section title="Trabajos en Caliente" className="mt-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {Object.entries(permit.anexoEnergias.trabajosEnCaliente).map(([key, value]) => (
+                                            <RadioCheck key={key} label={key.replace(/([A-Z])/g, ' $1').toUpperCase()} value={value} />
+                                        ))}
+                                    </div>
+                                </Section>
+                            )}
+
+                            {permit.anexoEnergias.procedimientoLOTO && (
+                                <Section title="Procedimiento LOTO" className="mt-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {Object.entries(permit.anexoEnergias.procedimientoLOTO).map(([key, value]) => (
+                                            <RadioCheck key={key} label={key.replace(/([A-Z])/g, ' $1').toUpperCase()} value={value} />
+                                        ))}
+                                    </div>
+                                </Section>
+                            )}
+
+                            {permit.anexoEnergias.sistemaElectrico && (
+                                <Section title="Sistema Eléctrico" className="mt-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <Field label="Tensión Nominal" value={permit.anexoEnergias.sistemaElectrico.tensionNominal} />
+                                        <Field label="Tensión Personal Expuesto" value={permit.anexoEnergias.sistemaElectrico.tensionPersonal} />
+                                        <Field label="Distancia de Seguridad" value={permit.anexoEnergias.sistemaElectrico.distanciaSeguridad} />
+                                    </div>
+                                </Section>
+                            )}
+                        </CollapsibleContent>
+                    </Collapsible>
+                )}
+
+                {/* Anexo Izaje */}
+                {permit.selectedWorkTypes?.izaje && permit.anexoIzaje && (
+                    <Collapsible defaultOpen={false}>
+                        <CollapsibleTrigger className="flex w-full items-center justify-between bg-green-50 p-4 rounded-lg border border-green-200 shadow-sm font-semibold text-green-800 hover:bg-green-100 transition-colors">
+                            <span className="flex items-center gap-2">
+                                <Shield size={18} className="text-green-600"/>
+                                ANEXO 4 - Izaje de Cargas
+                            </span>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="bg-white border-x border-b border-green-200 rounded-b-lg p-6 space-y-6">
+                            <Section title="Información General">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <Field label="Acción" value={Object.entries(permit.anexoIzaje.informacionGeneral.accion || {}).filter(([,v]) => v).map(([k]) => k).join(', ')} />
+                                    <Field label="Peso de Carga" value={Object.entries(permit.anexoIzaje.informacionGeneral.pesoCarga || {}).filter(([,v]) => v).map(([k]) => k).join(', ')} />
+                                    <Field label="Equipo a Utilizar" value={Object.entries(permit.anexoIzaje.informacionGeneral.equipoUtilizar || {}).filter(([,v]) => v).map(([k]) => k).join(', ')} />
+                                    <Field label="Capacidad del Equipo" value={permit.anexoIzaje.informacionGeneral.capacidadEquipo} />
+                                </div>
+                            </Section>
+
+                            {permit.anexoIzaje.aspectosRequeridos && (
+                                <Section title="Aspectos Requeridos" className="mt-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {Object.entries(permit.anexoIzaje.aspectosRequeridos).map(([key, value]) => (
+                                            <RadioCheck key={key} label={key.replace(/([A-Z])/g, ' $1').toUpperCase()} value={value} />
+                                        ))}
+                                    </div>
+                                </Section>
+                            )}
+
+                            {permit.anexoIzaje.precauciones && (
+                                <Section title="Precauciones" className="mt-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {Object.entries(permit.anexoIzaje.precauciones).map(([key, value]) => (
+                                            <RadioCheck key={key} label={key.replace(/([A-Z])/g, ' $1').toUpperCase()} value={value} />
+                                        ))}
+                                    </div>
+                                </Section>
+                            )}
+
+                            {/* Daily Validations */}
+                            <div className="mt-8 border-t pt-6">
+                                <DailyValidationTable
+                                    anexoName="anexoIzaje"
+                                    validationData={permit.anexoIzaje.validacionesDiarias}
+                                    permit={permit}
+                                    onSignClick={handleDailyValidationClick}
+                                />
+                            </div>
+                        </CollapsibleContent>
+                    </Collapsible>
+                )}
+
+                {/* Anexo Excavaciones */}
+                {permit.selectedWorkTypes?.excavacion && permit.anexoExcavaciones && (
+                    <Collapsible defaultOpen={false}>
+                        <CollapsibleTrigger className="flex w-full items-center justify-between bg-orange-50 p-4 rounded-lg border border-orange-200 shadow-sm font-semibold text-orange-800 hover:bg-orange-100 transition-colors">
+                            <span className="flex items-center gap-2">
+                                <AlertTriangle size={18} className="text-orange-600"/>
+                                ANEXO 5 - Excavaciones
+                            </span>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="bg-white border-x border-b border-orange-200 rounded-b-lg p-6 space-y-6">
+                            <Section title="Dimensiones de la Excavación">
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <Field label="Dimensiones" value={permit.anexoExcavaciones.informacionGeneral.dimensiones} />
+                                    <Field label="Profundidad" value={permit.anexoExcavaciones.informacionGeneral.profundidad} />
+                                    <Field label="Ancho" value={permit.anexoExcavaciones.informacionGeneral.ancho} />
+                                    <Field label="Largo" value={permit.anexoExcavaciones.informacionGeneral.largo} />
+                                </div>
+                            </Section>
+
+                            {permit.anexoExcavaciones.aspectosRequeridos && (
+                                <Section title="Aspectos Requeridos" className="mt-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {Object.entries(permit.anexoExcavaciones.aspectosRequeridos).map(([key, value]) => (
+                                            <RadioCheck key={key} label={key.replace(/([A-Z])/g, ' $1').toUpperCase()} value={value} />
+                                        ))}
+                                    </div>
+                                </Section>
+                            )}
+
+                            {permit.anexoExcavaciones.precauciones && (
+                                <Section title="Precauciones" className="mt-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {Object.entries(permit.anexoExcavaciones.precauciones).map(([key, value]) => (
+                                            <RadioCheck key={key} label={key.replace(/([A-Z])/g, ' $1').toUpperCase()} value={value} />
+                                        ))}
+                                    </div>
+                                </Section>
+                            )}
+
+                            {/* Daily Validations */}
+                            <div className="mt-8 border-t pt-6">
+                                <DailyValidationTable
+                                    anexoName="anexoExcavaciones"
+                                    validationData={permit.anexoExcavaciones.validacionesDiarias}
+                                    permit={permit}
+                                    onSignClick={handleDailyValidationClick}
+                                />
+                            </div>
+                        </CollapsibleContent>
+                    </Collapsible>
+                )}
 
                 {/* Workers Table */}
                 <Card>
@@ -640,6 +1014,33 @@ export const PermitDetail: React.FC<{ user: User }> = ({ user }) => {
                         >
                             Confirmar Cierre Final
                         </Button>
+                    </div>
+                </div>
+            </Dialog>
+
+            {/* Daily Validation Dialog */}
+            <Dialog open={dailyValidationDialogOpen} onClose={() => setDailyValidationDialogOpen(false)}>
+                <div className="p-6">
+                    <h3 className="text-lg font-bold mb-4">Validación Diaria</h3>
+                    <p className="text-sm text-slate-500 mb-4">
+                        Día {(dailyValidationTarget?.index ?? 0) + 1} - {dailyValidationTarget?.type === 'responsable' ? 'Responsable del Trabajo' : 'Autoridad del Área'}
+                    </p>
+
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium mb-2">Nombre completo</label>
+                        <input
+                            type="text"
+                            value={dailyValidationName}
+                            onChange={(e) => setDailyValidationName(e.target.value)}
+                            placeholder="Ingrese su nombre"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+
+                    <SignaturePad onSave={handleDailyValidationSign} isSaving={isSigning} />
+
+                    <div className="mt-4 flex justify-end">
+                        <Button variant="ghost" onClick={() => setDailyValidationDialogOpen(false)}>Cancelar</Button>
                     </div>
                 </div>
             </Dialog>
