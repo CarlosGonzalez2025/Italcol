@@ -83,6 +83,112 @@ const RadioCheck = ({ label, value, spec }: any) => {
     );
 };
 
+// --- DAILY VALIDATION TABLE ---
+const DailyValidationTable = ({ anexoName, validationData, permit, onSignClick }: {
+    anexoName: string;
+    validationData?: { responsable: ValidacionDiaria[]; autoridad: ValidacionDiaria[] };
+    permit: Permit;
+    onSignClick: (anexo: string, type: 'responsable' | 'autoridad', index: number) => void;
+}) => {
+    // Calculate permit duration
+    let durationInDays = 1;
+    if (permit.generalInfo?.validFrom && permit.generalInfo?.validUntil) {
+        try {
+            const startDate = parseISO(permit.generalInfo.validFrom);
+            const endDate = parseISO(permit.generalInfo.validUntil);
+            if (isValid(startDate) && isValid(endDate)) {
+                durationInDays = differenceInCalendarDays(endDate, startDate) + 1;
+            }
+        } catch (e) {
+            console.error("Error parsing dates:", e);
+        }
+    }
+
+    const renderRows = (type: 'responsable' | 'autoridad') => {
+        return Array.from({ length: durationInDays }, (_, i) => {
+            const v = validationData?.[type]?.[i];
+
+            return (
+                <tr key={`${type}-${i}`} className="border-b hover:bg-slate-50">
+                    <td className="p-3 text-center font-semibold">{i + 1}</td>
+                    <td className="p-3">{v?.nombre || 'Pendiente'}</td>
+                    <td className="p-3 text-center">
+                        {v?.firma ? (
+                            <div className="flex items-center justify-center">
+                                <img src={v.firma} alt="Firma" className="h-10 w-20 border rounded object-contain" />
+                            </div>
+                        ) : (
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => onSignClick(anexoName, type, i)}
+                                disabled={permit.status !== 'en_ejecucion' && permit.status !== 'suspendido'}
+                            >
+                                Firmar
+                            </Button>
+                        )}
+                    </td>
+                    <td className="p-3 text-xs text-slate-500">
+                        {v?.fecha ? safeFormat(v.fecha, 'dd/MM/yy HH:mm') : '-'}
+                    </td>
+                </tr>
+            );
+        });
+    };
+
+    return (
+        <Section title="Validación Diaria" className="mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Responsable Table */}
+                <div className="border rounded-lg overflow-hidden">
+                    <div className="bg-blue-50 p-3 border-b">
+                        <h4 className="font-semibold text-sm text-blue-900">Responsable del Trabajo</h4>
+                        <p className="text-xs text-blue-700">Entiendo las condiciones y responsabilidad</p>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead className="bg-slate-100">
+                                <tr>
+                                    <th className="p-3 text-left font-semibold">Día</th>
+                                    <th className="p-3 text-left font-semibold">Nombre</th>
+                                    <th className="p-3 text-center font-semibold">Firma</th>
+                                    <th className="p-3 text-left font-semibold">Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {renderRows('responsable')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Autoridad Table */}
+                <div className="border rounded-lg overflow-hidden">
+                    <div className="bg-green-50 p-3 border-b">
+                        <h4 className="font-semibold text-sm text-green-900">Autoridad del Área</h4>
+                        <p className="text-xs text-green-700">Entiendo las condiciones y responsabilidad</p>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead className="bg-slate-100">
+                                <tr>
+                                    <th className="p-3 text-left font-semibold">Día</th>
+                                    <th className="p-3 text-left font-semibold">Nombre</th>
+                                    <th className="p-3 text-center font-semibold">Firma</th>
+                                    <th className="p-3 text-left font-semibold">Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {renderRows('autoridad')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </Section>
+    );
+};
+
 // --- SIGNATURE PAD ---
 const SignaturePad = ({ onSave, isSaving }: any) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -186,6 +292,15 @@ export const PermitDetail: React.FC<{ user: User }> = ({ user }) => {
     const [signingContext, setSigningContext] = useState<any>(null); // { role, type, index? }
     const [signerName, setSignerName] = useState('');
     const [isSigning, setIsSigning] = useState(false);
+
+    // Daily Validation State
+    const [dailyValidationDialogOpen, setDailyValidationDialogOpen] = useState(false);
+    const [dailyValidationTarget, setDailyValidationTarget] = useState<{
+        anexo: string;
+        type: 'responsable' | 'autoridad';
+        index: number;
+    } | null>(null);
+    const [dailyValidationName, setDailyValidationName] = useState('');
 
     // Initial Load & Realtime Listener
     useEffect(() => {
@@ -310,6 +425,51 @@ export const PermitDetail: React.FC<{ user: User }> = ({ user }) => {
         } finally {
             setIsSigning(false);
         }
+    };
+
+    const handleDailyValidationSign = async (dataUrl: string) => {
+        if (!permit || !dailyValidationTarget) return;
+        const { anexo, type, index } = dailyValidationTarget;
+
+        setIsSigning(true);
+        try {
+            const permitRef = doc(db, 'permits', permit.id);
+            const validationData = {
+                nombre: dailyValidationName || user.name,
+                fecha: new Date().toISOString(),
+                firma: dataUrl
+            };
+
+            // Update the corresponding validation array
+            const fieldPath = `${anexo}.validacionesDiarias.${type}[${index}]`;
+
+            // Get current data
+            const currentAnexo = (permit as any)[anexo] || {};
+            const currentValidaciones = currentAnexo.validacionesDiarias || { responsable: [], autoridad: [] };
+
+            // Update the array
+            const updatedArray = [...(currentValidaciones[type] || [])];
+            updatedArray[index] = validationData;
+
+            await updateDoc(permitRef, {
+                [`${anexo}.validacionesDiarias.${type}`]: updatedArray
+            });
+
+            setDailyValidationDialogOpen(false);
+            setDailyValidationTarget(null);
+            setDailyValidationName('');
+        } catch (e) {
+            console.error(e);
+            alert("Error al guardar firma de validación diaria");
+        } finally {
+            setIsSigning(false);
+        }
+    };
+
+    const handleDailyValidationClick = (anexo: string, type: 'responsable' | 'autoridad', index: number) => {
+        setDailyValidationTarget({ anexo, type, index });
+        setDailyValidationName('');
+        setDailyValidationDialogOpen(true);
     };
 
     const changeStatus = async (newStatus: PermitStatus) => {
@@ -466,6 +626,16 @@ export const PermitDetail: React.FC<{ user: User }> = ({ user }) => {
                                     </div>
                                 </Section>
                             )}
+
+                            {/* Daily Validations */}
+                            <div className="mt-8 border-t pt-6">
+                                <DailyValidationTable
+                                    anexoName="anexoAltura"
+                                    validationData={permit.anexoAltura.validacionesDiarias}
+                                    permit={permit}
+                                    onSignClick={handleDailyValidationClick}
+                                />
+                            </div>
                         </CollapsibleContent>
                     </Collapsible>
                 )}
@@ -508,6 +678,16 @@ export const PermitDetail: React.FC<{ user: User }> = ({ user }) => {
                                     </div>
                                 </Section>
                             )}
+
+                            {/* Daily Validations */}
+                            <div className="mt-8 border-t pt-6">
+                                <DailyValidationTable
+                                    anexoName="anexoConfinado"
+                                    validationData={permit.anexoConfinado.validacionesDiarias}
+                                    permit={permit}
+                                    onSignClick={handleDailyValidationClick}
+                                />
+                            </div>
                         </CollapsibleContent>
                     </Collapsible>
                 )}
@@ -607,6 +787,16 @@ export const PermitDetail: React.FC<{ user: User }> = ({ user }) => {
                                     </div>
                                 </Section>
                             )}
+
+                            {/* Daily Validations */}
+                            <div className="mt-8 border-t pt-6">
+                                <DailyValidationTable
+                                    anexoName="anexoIzaje"
+                                    validationData={permit.anexoIzaje.validacionesDiarias}
+                                    permit={permit}
+                                    onSignClick={handleDailyValidationClick}
+                                />
+                            </div>
                         </CollapsibleContent>
                     </Collapsible>
                 )}
@@ -649,6 +839,16 @@ export const PermitDetail: React.FC<{ user: User }> = ({ user }) => {
                                     </div>
                                 </Section>
                             )}
+
+                            {/* Daily Validations */}
+                            <div className="mt-8 border-t pt-6">
+                                <DailyValidationTable
+                                    anexoName="anexoExcavaciones"
+                                    validationData={permit.anexoExcavaciones.validacionesDiarias}
+                                    permit={permit}
+                                    onSignClick={handleDailyValidationClick}
+                                />
+                            </div>
                         </CollapsibleContent>
                     </Collapsible>
                 )}
@@ -814,6 +1014,33 @@ export const PermitDetail: React.FC<{ user: User }> = ({ user }) => {
                         >
                             Confirmar Cierre Final
                         </Button>
+                    </div>
+                </div>
+            </Dialog>
+
+            {/* Daily Validation Dialog */}
+            <Dialog open={dailyValidationDialogOpen} onClose={() => setDailyValidationDialogOpen(false)}>
+                <div className="p-6">
+                    <h3 className="text-lg font-bold mb-4">Validación Diaria</h3>
+                    <p className="text-sm text-slate-500 mb-4">
+                        Día {(dailyValidationTarget?.index ?? 0) + 1} - {dailyValidationTarget?.type === 'responsable' ? 'Responsable del Trabajo' : 'Autoridad del Área'}
+                    </p>
+
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium mb-2">Nombre completo</label>
+                        <input
+                            type="text"
+                            value={dailyValidationName}
+                            onChange={(e) => setDailyValidationName(e.target.value)}
+                            placeholder="Ingrese su nombre"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+
+                    <SignaturePad onSave={handleDailyValidationSign} isSaving={isSigning} />
+
+                    <div className="mt-4 flex justify-end">
+                        <Button variant="ghost" onClick={() => setDailyValidationDialogOpen(false)}>Cancelar</Button>
                     </div>
                 </div>
             </Dialog>
